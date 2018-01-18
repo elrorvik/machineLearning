@@ -41,16 +41,29 @@ def create_y(data):
     y = data[:,(n-1)]
     return y
 
+def create_x(data):
+    n = data.shape[1] # number of colums
+    x = data[:,n-1]
+    return x
+
+def plot_result(test_data,training_data):
+    plt.scatter(create_x(training_data),create_y(training_data),color='red')
+    plt.scatter(create_x(test_data),create_y(test_data),color='blue')
+    plt.show()
+
 # training model
-file_name = "../regression/train_1d_reg_data.csv"
-data = get_data_from_file(file_name)
-X = create_X(data);
-y = create_y(data);
+file_name = "../regression/train_2d_reg_data.csv"
+training_data = get_data_from_file(file_name)
+X = create_X(training_data);
+y = create_y(training_data);
 w = OLS(X,y)
 print('Error training',error_mse(X,w,y))
 
-file_name = "../regression/test_1d_reg_data.csv"
-data = get_data_from_file(file_name)
-X = create_X(data);
-y = create_y(data);
+file_name = "../regression/test_2d_reg_data.csv"
+test_data = get_data_from_file(file_name)
+X = create_X(test_data);
+y = create_y(test_data);
 print('Error testing',error_mse(X,w,y))
+print(w)
+
+#plot_result(test_data,training_data)
