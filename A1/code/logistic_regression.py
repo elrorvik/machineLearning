@@ -10,17 +10,11 @@ def sigma(w,x):
 def update_w(w,X,y,eta):
     temp = 0
     for i in range(0,len(y)):
-        x_i = np.transpose(X[i,:])
+        X_i = np.transpose(X[i,:])
         y_i = y.item(i)
-        temp += (sigma(w,x_i) - y_i)*x_i
+        temp += (sigma(w,X_i) - y_i)*X_i
     w = w - eta*temp
     return w
-
-def predict(x,w):
-    y = 0
-    if np.dot(np.transpose(w),x) >= 0.5 :
-        y = 1
-    return y
 
 def cross_entropy_error(y,w,x):
     N = y.shape[0];
@@ -33,12 +27,13 @@ def cross_entropy_error(y,w,x):
     error = -1/N*temp
     return error
 
-def plot_linearity(data,subplot_Num,fig_title):
+def property_plot(data,subplot_Num,fig_title,w):
     plt.figure(1)
     plt.subplot(subplot_Num)
     red_data = []
     blue_data = []
-
+    desicion_boundary = []
+    x = create_x(data);
     for i in range(0,len(data)):
         x_i = data[i,0:data.shape[1]-1].tolist()[0]
         y_i = data[i,data.shape[1]-1].tolist()
@@ -51,6 +46,9 @@ def plot_linearity(data,subplot_Num,fig_title):
     blue_data = np.matrix(blue_data)
     plt.scatter(red_data[:,0],red_data[:,1],color='red',label='Label=0')
     plt.scatter(blue_data[:,0],blue_data[:,1],color='blue',label='Label=1')
+    x_1 =x[:,0]
+    plt.plot(x_1,-w[0]/w[2] - x_1*w[1]/w[2])
+
     plt.legend()
     plt.title(fig_title)
     plt.xlabel("$x_1$")
@@ -70,8 +68,8 @@ training_data = get_data_from_file(file_name)
 X = create_X(training_data);
 y = create_y(training_data);
 
-eta = 0.001 # learning rate
-w  = 1*np.matrix([[1,1,1],[1,1,1],[1,1,1]])
+eta = 0.0001 # learning rate #0.001
+w  = 1*np.matrix([[1],[1],[1]])
 error_array = [];
 it_array = [];
 for i in range(0,1000):
@@ -80,6 +78,7 @@ for i in range(0,1000):
     error_array.append(error);
     it_array.append(i);
 
+print("The weights after training:")
 print(w)
 print("Error from train set",cross_entropy_error(y,w,X))
 
@@ -90,7 +89,7 @@ y = create_y(test_data);
 
 print("Error from test set",cross_entropy_error(y,w,X))
 
-plot_linearity(training_data,311,"Plot of trainig set")
-plot_linearity(test_data,312, "Plot of test set")
+property_plot(training_data,311,"Plot of trainig set",w)
+property_plot(test_data,312, "Plot of test set",w)
 plot_cross_entropy_error(it_array,error_array,313)
 plt.show()
