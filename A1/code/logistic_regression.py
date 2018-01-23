@@ -2,10 +2,10 @@ import numpy as np
 import matplotlib.pyplot as plt
 from utility import create_X, create_x ,create_y,get_data_from_file
 
-def sigma(w,x):
-    z = np.dot(np.transpose(w),x)
-    z = z.item(0)
-    return 1/(1+np.exp(-z))
+def sigma(w,X): # equals y_hat = estimate of y
+    z = np.dot(np.transpose(w),X).item(0)
+    y_hat = 1/(1+np.exp(-z))
+    return y_hat
 
 def update_w(w,X,y,eta):
     temp = 0
@@ -16,16 +16,35 @@ def update_w(w,X,y,eta):
     w = w - eta*temp
     return w
 
-def cross_entropy_error(y,w,x):
+def cross_entropy_error(y,w,X):
+
     N = y.shape[0];
     temp = 0
     for i in range(0,len(y)):
         y_i = y.item(i)
-        x_i = x.item(i)
-        sigma_z = sigma(w,x_i)
-        temp += y_i*np.log2(sigma_z) + (1-y_i)*np.log2(1 - sigma_z)
+        X_i = np.transpose(X[i,:])
+        y_hat = sigma(w,X_i)
+        #if(y_hat >= 0.5):
+        #    print("Real label: ",y_i, " Guessed label: 1.0 ")
+        #else:
+        #    print("Real label: ",y_i, " Guessed label: 0.0 ")
+        temp += y_i*np.log2(y_hat) + (1-y_i)*np.log2(1 - y_hat)
     error = -1/N*temp
     return error
+
+def abs_delta_cross_entropy_error(y,w,X):
+    delta_error = 0
+    for i in range(0,len(y)):
+        y_i = y.item(i)
+        X_i = np.transpose(X[i,:])
+        y_hat = sigma(w,X_i)
+        delta_error += (y_hat - y_i)*X_i
+
+    abs_delta_error = 0
+    for i in range(0,delta_error.shape[0]):
+        abs_delta_error += delta_error[i,0]*delta_error[i,0]
+    return abs_delta_error
+
 
 def property_plot(data,subplot_Num,fig_title,w):
     plt.figure(1)
@@ -68,15 +87,23 @@ training_data = get_data_from_file(file_name)
 X = create_X(training_data);
 y = create_y(training_data);
 
-eta = 0.0001 # learning rate #0.001
-w  = 1*np.matrix([[1],[1],[1]])
+eta = 0.1 # learning rate #0.001
+w  = 0.1*np.matrix([[1],[1],[1]])
 error_array = [];
 it_array = [];
+prev_delta_error = 100000
 for i in range(0,1000):
     w = update_w(w,X,y,eta)
     error = cross_entropy_error(y,w,X)
     error_array.append(error);
     it_array.append(i);
+    delta_error = abs_delta_cross_entropy_error(y,w,X)
+    if(delta_error/prev_delta_error >= 0.999 ):
+        break;
+    else:
+        #print(i, delta_error/prev_delta_error)
+        #print("prev delta error: ", prev_delta_error, " delta error: ",delta_error)
+        prev_delta_error = delta_error
 
 print("The weights after training:")
 print(w)
