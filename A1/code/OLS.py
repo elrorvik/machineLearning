@@ -6,13 +6,12 @@ from utility import create_X, create_x ,create_y,get_data_from_file
 
 def OLS(X,y):
     X_t = np.transpose(X)
-    w = np.dot(X_t,y)
-    w = np.dot(np.linalg.pinv(np.dot(X_t,X)),w)
+    w = np.dot(np.linalg.pinv(np.dot(X_t,X)),np.dot(X_t,y))
     return w
 
 def error_mse(X,w,y):
-    N = X.shape[1] # number of data_points
-    error = (np.linalg.norm(np.dot(X,w)-y))/float(N)
+    N = X.shape[0] # number of data_points
+    error = np.square(np.linalg.norm(X*w-y))/N
     return error
 
 
@@ -39,18 +38,18 @@ def plot_result(test_data,training_data,w):
     plt.show()
 
 # training model
-file_name = "../regression/train_1d_reg_data.csv"
+file_name = "../regression/train_2d_reg_data.csv"
 training_data = get_data_from_file(file_name)
 X = create_X(training_data);
 y = create_y(training_data);
 w = OLS(X,y)
 print('Error training',error_mse(X,w,y))
 
-file_name = "../regression/test_1d_reg_data.csv"
+file_name = "../regression/test_2d_reg_data.csv"
 test_data = get_data_from_file(file_name)
 X = create_X(test_data);
 y = create_y(test_data);
 print('Error testing',error_mse(X,w,y))
 print(w)
 
-plot_result(test_data,training_data,w)
+#plot_result(test_data,training_data,w)
