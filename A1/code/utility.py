@@ -23,6 +23,14 @@ def create_X(data):
     X = np.append(ones,x,axis = 1)
     return X
 
+def create_circular_X(data):
+    x = create_x(data)
+    squared_x = np.append(np.square(x[:,0]),np.square(x[:,1]),axis = 1)
+    X = create_X(data)
+    X = np.append(X,squared_x,axis = 1)
+    return X
+
+
 def create_y(data):
     n = data.shape[1] # number of colums
     y = data[:,(n-1)]
