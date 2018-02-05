@@ -1,6 +1,6 @@
 import numpy as np
 import matplotlib.pyplot as plt
-from utility import create_X, create_x ,create_y,get_data_from_file, create_circular_X
+from utility import create_X, create_x ,create_y,get_data_from_file, create_elliptical_X
 from math import pi
 
 def sigma(w,X): # equals y_hat = estimate of y
@@ -47,8 +47,8 @@ def plot_dataset_in_label_color(data):
     plt.scatter(label_1[:,0],label_1[:,1],color='blue',label='Label=1')
 
 
-def property_plot_linear_separable(data,subplot_Num,fig_title,w):
-    plt.figure(1)
+def property_plot_linear_separable(data,subplot_Num,fig_title,w,fig_num):
+    plt.figure(fig_num)
     plt.subplot(subplot_Num)
     plot_dataset_in_label_color(data)
     x = create_x(data)
@@ -59,8 +59,8 @@ def property_plot_linear_separable(data,subplot_Num,fig_title,w):
     plt.xlabel("$x_1$")
     plt.ylabel("$x_2$")
 
-def property_plot_circular_separable(data,subplot_Num,fig_title,w):
-    plt.figure(2)
+def property_plot_elliptical_separable(data,subplot_Num,fig_title,w,fig_num):
+    plt.figure(fig_num)
     plt.subplot(subplot_Num)
     plot_dataset_in_label_color(data)
 
@@ -77,94 +77,103 @@ def property_plot_circular_separable(data,subplot_Num,fig_title,w):
     plt.ylabel("$x_2$")
 
 
-def plot_cross_entropy_error(it,error,label):
-    plt.figure(3)
+def plot_cross_entropy_error(error,label,fig_num):
+    plt.figure(fig_num)
     plt.plot(error,label = label)
     plt.xlabel("Number of iterations")
     plt.ylabel("Cross-entropy error")
     plt.legend()
 
-def test_linear_logistic_regression():
-    print("Assignment 2.1")
 
-    file_name = "../classification/cl_train_1.csv"
-    training_data = get_data_from_file(file_name)
-    X_train = create_X(training_data);
+def test_linear_logistic_regression(file_name_train,file_name_test,fig_num):
+    training_data = get_data_from_file(file_name_train)
+    X_train = create_X(training_data); #input X = [1, x_1,x_2]
     y_train = create_y(training_data);
 
-    file_name = "../classification/cl_test_1.csv"
-    test_data = get_data_from_file(file_name)
+    test_data = get_data_from_file(file_name_test)
     X_test = create_X(test_data);
     y_test = create_y(test_data);
 
     eta = 0.1 # learning rate #0.001
     w  = 0.1*np.matrix([[1],[1],[1]])
-    error_train_array = [];
-    error_test_array = [];
-    error_train  = 0;
-    error_test = 0;
-    it_array = [];
+    train_error_array = [];
+    test_error_array = [];
+    train_error  = 0;
+    test_error = 0;
+
     for i in range(0,1000):
         w = update_w(w,X_train,y_train,eta)
 
-        error_train = cross_entropy_error(y_train,w,X_train)
-        error_train_array.append(error_train);
+        train_error = cross_entropy_error(y_train,w,X_train)
+        train_error_array.append(train_error);
 
-        error_test = cross_entropy_error(y_test,w,X_test)
-        error_test_array.append(error_test);
-
-        it_array.append(i);
+        test_error = cross_entropy_error(y_test,w,X_test)
+        test_error_array.append(test_error);
 
     print("The weights after training:")
     print(w)
-    print("Error from train set",error_train)
-    print("Error from test set",error_test)
+    print("Error from train set",train_error)
+    print("Error from test set",test_error)
 
-    property_plot_linear_separable(training_data,211,"Plot of trainig set",w)
-    property_plot_linear_separable(test_data,212, "Plot of test set",w)
-    plot_cross_entropy_error(it_array,error_train_array,'train data')
-    plot_cross_entropy_error(it_array,error_test_array,'test data')
-    plt.show()
+    property_plot_linear_separable(training_data,211,"Plot of training set",w,fig_num)
+    property_plot_linear_separable(test_data,212, "Plot of test set",w,fig_num)
+    plot_cross_entropy_error(train_error_array,'train data',fig_num+1)
+    plot_cross_entropy_error(test_error_array,'test data',fig_num + 1)
 
 
-def test_circular_logistic_regression():
-    file_name = "../classification/cl_train_2.csv"
-    training_data = get_data_from_file(file_name)
-    X = create_circular_X(training_data)
-    y = create_y(training_data);
 
-    eta = 0.1 # learning rate #0.001
+def test_elliptical_logistic_regression(file_name_train,file_name_test,fig_num):
+
+    training_data = get_data_from_file(file_name_train)
+    X_train = create_elliptical_X(training_data) #input X = [1, x_1,x_2,x_1^2,x_2^2]
+    y_train = create_y(training_data);
+
+    test_data = get_data_from_file(file_name_test)
+    X_test = create_elliptical_X(test_data)
+    y_test = create_y(test_data);
+
+    eta = 0.10 # learning rate #0.001
     w  = 0.1*np.matrix([[1],[1],[1],[1],[1]])
-    error_array = [];
+    train_error_array = [];
+    test_error_array = [];
+    train_error  = 0;
+    test_error = 0;
     it_array = [];
-    prev_delta_error = 100000
-    for i in range(0,1000):
-        w = update_w(w,X,y,eta)
-        error = cross_entropy_error(y,w,X)
-        error_array.append(error);
-        it_array.append(i);
-        delta_error = abs_delta_cross_entropy_error(y,w,X)
-        #if(delta_error/prev_delta_error >= 0.999 ):
-        #    break;
-        #else:
-        #    prev_delta_error = delta_error
 
-    print("number of oterations",len(error_array))
+    for i in range(0,1000):
+        w = update_w(w,X_train,y_train,eta)
+
+        train_error = cross_entropy_error(y_train,w,X_train)
+        train_error_array.append(train_error);
+
+        test_error = cross_entropy_error(y_test,w,X_test)
+        test_error_array.append(test_error);
+
+        it_array.append(i);
+
     print("The weights after training:")
     print(w)
-    print("Error from train set",cross_entropy_error(y,w,X))
+    print("Error from train set",train_error)
+    print("Error from test set",test_error)
 
-    file_name = "../classification/cl_test_2.csv"
-    test_data = get_data_from_file(file_name)
-    X = create_circular_X(test_data)
-    y = create_y(test_data);
+    property_plot_elliptical_separable(training_data,211,"Plot of trainig set",w,fig_num)
+    property_plot_elliptical_separable(test_data,212, "Plot of test set",w,fig_num)
+    plot_cross_entropy_error(train_error_array,'train data',fig_num+1)
+    plot_cross_entropy_error(test_error_array,'test data',fig_num+1)
 
-    print("Error from test set",cross_entropy_error(y,w,X))
 
-    property_plot_circular_separable(training_data,211,"Plot of trainig set",w)
-    property_plot_circular_separable(test_data,212, "Plot of test set",w)
-    plot_cross_entropy_error(it_array,error_array)
-    plt.show()
+# assignemnt 1
+print("Assignemtn 2.1")
+file_name_train = "../classification/cl_train_1.csv"
+file_name_test = "../classification/cl_test_1.csv"
+test_linear_logistic_regression(file_name_train,file_name_test,1)
 
-#test_circular_logistic_regression
-test_linear_logistic_regression()
+# assignemtn 2
+print("\n Assignemtn 2.2")
+file_name_train = "../classification/cl_train_2.csv"
+file_name_test = "../classification/cl_test_2.csv"
+print("Linear decision boundary")
+test_elliptical_logistic_regression(file_name_train,file_name_test,5)
+print("\n Elliptical decision")
+test_linear_logistic_regression(file_name_train,file_name_test,3)
+plt.show()
