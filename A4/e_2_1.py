@@ -13,13 +13,11 @@ def get_data(filepath):
 
     return data[:,0:data.shape[1]-1],data[:,-1]
 
-def eucledian_dist_list(X,Y,row_c,k, regression = True):
+def eucledian_dist_list(X,Y,x_c,k, regression = True):
     eucledian_dic = {}
     eucledian_list = [];
-    x_c = X[row_c,:]
+
     for i in range(0,X.shape[0]):
-        if(i == row_c):
-            continue;
         x = X[i,:]
         dist = eucledian_dist(x,x_c)
         
@@ -31,34 +29,45 @@ def eucledian_dist_list(X,Y,row_c,k, regression = True):
         eucledian_list.append(dist)
 
     eucledian_list.sort()
-    
+
+    print_k_neighbours(eucledian_list[0:k],eucledian_dic,X,Y)
     if(regression == True):
-        mean = simple_mean_k_neighbours(eucledian_list[0:k],eucledian_dic,X)
+        regression = mean_regression_k_neighbours(eucledian_list[0:k],eucledian_dic,X,Y)
+        print(x_c, " regression value: ", regression)
     else:
-        mean = np.zeros(X.shape[1]+1)
-        mean[0:X.shape[1]] = simple_mean_k_neighbours(eucledian_list[0:k],eucledian_dic,X)
-        mean[-1] = classification(eucledian_list[0:k],eucledian_dic,X,Y)
+        label = classification(eucledian_list[0:k],eucledian_dic,X,Y)
+        print(x_c, " classification value: ", label)
         
 
-    print(mean)
 
-def simple_mean_k_neighbours(dist_list,dist_dic,X):
+def print_k_neighbours(dist_list,dist_dic,X,Y):
     #x_mean = x_c
-    x_mean = np.zeros(X[dist_dic[dist_list[0]][0]].shape)
+    y_mean = 0
     last_dist = -1;
+    print("Neighbours")
     for dist in dist_list:
-
         if(last_dist == dist):
-            print( "i was last")
             continue;
-        
         for i in dist_dic[dist]:
-            x = X[i]
-            x_mean += x
-            
+            print(X[i], " -> ", Y[i])
+              
         last_dist = dist
 
-    return x_mean/(len(dist_list))
+
+def mean_regression_k_neighbours(dist_list,dist_dic,X,Y):
+    #x_mean = x_c
+    y_mean = 0
+    last_dist = -1;
+    for dist in dist_list:
+        if(last_dist == dist):
+            continue;
+        for i in dist_dic[dist]:
+            y = Y[i]
+            y_mean += y
+              
+        last_dist = dist
+
+    return y_mean/(len(dist_list))
 
 def classification(dist_list,dist_dic,X,Y):
     #x_mean = x_c
@@ -77,8 +86,6 @@ def classification(dist_list,dist_dic,X,Y):
                 label_dic[y] += 1
 
     max_label = max(label_dic.items(), key=operator.itemgetter(1))[0]
-    print(label_dic)
-
     return max_label;
      
 
@@ -89,8 +96,17 @@ def eucledian_dist(node_1,node_2):
 
 
 filepath="dataset/knn_regression.csv"
+X,Y = get_data(filepath)
+
+x_c = np.array([6.3,2.7,4.91])
+regression = True
+eucledian_dist_list(X,Y,x_c,10,regression)
+
 filepath="dataset/knn_classification.csv"
 X,Y = get_data(filepath)
-eucledian_dist_list(X,Y,68,10,False)
+
+x_c = np.array([6.3,2.7,4.91,1.8])
+regression = False
+eucledian_dist_list(X,Y,x_c,10,regression)
 
 
