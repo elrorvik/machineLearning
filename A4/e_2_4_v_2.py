@@ -79,7 +79,6 @@ class Network(object):
         return ( delta_b, delta_w)
 
     def evaluate(self, x, y):
-        print(self.feedforward(x[0]))
         test_results = [(np.argmax(self.feedforward(x[i])), y[i])
                         for i in range(len(x))]
         num_correct = 0
@@ -115,42 +114,23 @@ def transform_shape(data):
 
 
 
-digits = load_digits()
+X_train = np.array([ [0,0],[1,0],[0,1],[1,1] ])
+Y_train = np.array([0,1,1,0])
 
-X_train, X_test, y_train, y_test = train_test_split(digits.data, digits.target, test_size=0.25)
-X_train, X_test = X_train/255.0, X_test/255.0
-print("Y" , y_train.shape)
-print("X" , X_train.shape)
-
-#one_hot_Y_train = one_hot_encode_labels(y_train)
-#one_hot_Y_test = one_hot_encode_labels(y_test)
+#X_train = transform_shape(X_train)
+#Y_train = transform_shape(Y_train)
 
 
-one_hot_Y_train = y_train
-one_hot_Y_test =y_test
+print("Y test" , Y_train.shape)
+print("X test" , X_train.shape)
+X_test = X_train
+Y_test = Y_train
 
 
-print("Y" , one_hot_Y_train.shape)
-print("X" , X_train.shape)
-
-print("Y test" , one_hot_Y_test.shape)
-print("X test" , X_test.shape)
-
-
-X_train = transform_shape(X_train)
-#one_hot_Y_train = transform_shape(one_hot_Y_train)
-
-X_test = transform_shape(X_test)
-#one_hot_Y_test = transform_shape(one_hot_Y_test)
-
-print("Y test" , one_hot_Y_test.shape)
-print("X test" , X_test.shape)
-
-
-net = Network([64,30,10])
-epochs = 60
-eta = 3.0
-net.SGD(X_train, one_hot_Y_train, epochs,eta, X_test,one_hot_Y_test)
+net = Network([2,2,1])
+epochs = 60000
+eta = 0.01
+net.SGD(X_train, Y_train, epochs,eta, X_test,Y_test)
 
 
 
