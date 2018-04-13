@@ -35,16 +35,11 @@ class Network(object):
 
 	# gradient descent
 	def fit(self,X, y , ephocs, alpha):
-		cost = np.zeros(ephocs)
 		for i in range(0, ephocs):
-			[w0_nabla, w1_nabla, cost[i]] = self.back_propogation(X, y)
+			[w0_nabla, w1_nabla] = self.back_propogation(X, y)
 			self.weights[0] = self.weights[0] -  alpha*w0_nabla
 			self.weights[1] = self.weights[1] -  alpha*w1_nabla
 			# printing the current status
-			if (i+1)%(ephocs*0.1) == 0:
-				per = float(i+1)/ephocs*100
-				print(str(per)+"% Completed, Cost:"+str(cost[i]))
-		return cost
 
 	def back_propogation(self,X, y):
 			(n, m) = X.shape
@@ -58,9 +53,6 @@ class Network(object):
 			w0_F = self.weights[0][1:,:]  # remove bias
 			w1_F = self.weights[1][1:,:]
 
-			# Logistic Regression Cost function
-			cost = np.sum(np.sum( -y*np.log(a3) - (1-y)*np.log(1-a3) ))/m + (1.0/(2*m))*(sum(sum(w0_F*w0_F))+sum(sum(w1_F*w1_F)))
-
 			# backpropagation and calculation of gradient
 			delta_3 = (a3 - y)*sigmoid_derrivative(a3)
 			delta_2 = (w1_F.dot(delta_3))*sigmoid_derrivative(z2)
@@ -69,7 +61,7 @@ class Network(object):
 			nabla_w1 = nabla_w1.T/m + (1.0/m)*np.vstack((np.zeros((1,l2)),w1_F)) # add bia
 			nabla_w0 = nabla_w0.T/m + (1.0/m)*np.vstack((np.zeros((1,l1)),w0_F))
 
-			return [nabla_w0, nabla_w1, cost]
+			return [nabla_w0, nabla_w1]
 
 
 
@@ -99,7 +91,7 @@ ephocs = 400
 
 net = Network([n,l1,l2])
 
-cost = net.fit(X_train, one_hot_y_train ,  ephocs, eta)
+net.fit(X_train, one_hot_y_train ,  ephocs, eta)
 
 a3 = net.predict(X_test)
 
@@ -115,8 +107,3 @@ print(confusion_matrix(y_test[0], h[0]))
 acc = np.mean((h==y_test)*np.ones(h.shape))*100
 print("With Alpha:"+str(eta)+", Num Iteration:"+str(ephocs))
 print("Accuracy:"+str(acc))
-
-plt.plot(cost)
-plt.ylabel('cost')
-plt.xlabel('iteration')
-plt.show()
