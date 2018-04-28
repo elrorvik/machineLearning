@@ -1,4 +1,4 @@
-from skimage.io import imread_collection, imshow
+from skimage.io import imread_collection, imshow, concatenate_images
 from skimage import io
 import numpy as np
 import matplotlib.pyplot as plt
@@ -8,10 +8,12 @@ col_dir = 'chars74k-lite/*/*.jpg'
 
 #creating a collection with the available images
 col = imread_collection(col_dir)
-print(len(col))
-train = np.zeros((len(col), col[0].shape[0], col[0].shape[1]))
-#print(col.shape)
-print(col[0].shape)
+train = concatenate_images(col)
+label = np.zeros((train.shape[0],1))
+#for i in range(train.shape[0]):
+#    label[i] =
+print(type(col))
+print(train.shape)
 plt.figure()
-plt.imshow(col[-1], cmap=plt.cm.gray)
+plt.imshow(train[-1], cmap=plt.cm.gray)
 plt.show()
