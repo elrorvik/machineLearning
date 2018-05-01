@@ -1,12 +1,13 @@
 from OCR import *
 from extract_characters import *
+from pathlib import Path
+import pickle
 
-def classiify(model,pp,images):
+def classify(model,pp,images):
 
     feature_list = []
     for i in range(len(images)):
         image = images[i]
-        label = labels[i][0]
 
         df = hog_feature_extraction(image)
         df = pp.transform(np.array([df],'float64'))
@@ -27,27 +28,41 @@ def classiify(model,pp,images):
 
 
 def main():
+    load = True
     #----------Training-------------
     col_dir = 'chars74k-lite/*/*.jpg'
     print("===Training: ",col_dir)
     label,image = get_image(col_dir)
-
+    
+    print("Processing training data")
     train_images,test_images,train_labels,test_labels = split_train_test(label,image)
-
     train_images = data_processing(train_images)
     test_images = data_processing(test_images)
-    model,pp = training(train_images, train_labels)
+
+    if(load and Path("saved_model.o").is_file() and Path("saved_pp.o").is_file()):
+        print("Loading models")
+        model = pickle.load(open("saved_model.o","rb"))
+        pp = pickle.load(open("saved_pp.o","rb"))
+    else:
+        model,pp = training(train_images, train_labels,"HOG","SVM")
+        pickle.dump(model, open("saved_model.o","wb"))
+        pickle.dump(pp, open("saved_pp.o","wb"))
+    
+    print("Testing models")
     test(model,pp,test_images,test_labels)
 
     #---------Classify Images-----------
     clas_dir = 'detection-images/*.jpg'
     print("===Classify: ",clas_dir )
     clas_images = get_image_classify(clas_dir)
-    class_segments = extract_window(clas_images[1],name="image2",save=True)
-    results = classify(model,pp,class_segments)
+    class_segments = np.asarray(extract_window(clas_images[1],name="image2",save=True))
+    class_preprocessed = data_processing(class_segments)
+    results = classify(model,pp,class_preprocessed)
+    t = 175
+    print(results[t][1],results[t][2])
     plt.figure()
-    plt.imshow(results[0][0])
-    print(results[0][1],results[0][2])
+    plt.imshow(results[t][0])
+
     plt.show()
     
 
