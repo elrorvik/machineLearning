@@ -37,17 +37,6 @@ def get_image(folder_path):
 
 def split_train_test(y,X):
     X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=400)
-    '''num = [0]*26
-    print(y_train[0][0])
-    for i in range(len(y_train)):
-        y = int(y_train[i][0])
-        num[y] += 1
-    print(num)
-    num = [0]*26
-    for i in range(len(y_test)):
-        y = int(y_test[i][0])
-        num[y] += 1
-    print(num)'''
     return X_train,X_test,y_train,y_test
 
 def data_processing(images):
@@ -95,7 +84,7 @@ def training(images, labels,feature_method, classification_method):
     if(classification_method == "KNN"):
         model = KNeighborsClassifier(n_neighbors=8)
     elif(classification_method == "SVM"):
-        model = ssv.SVC(kernel='rbf')
+        model = ssv.SVC(kernel='rbf',probability=True)
 
     model.fit(features,label_list)
     return model,pp
@@ -131,7 +120,7 @@ def pca_test(images,labels,pipe,pp):
     label_list = []
 
     for i in range(len(images)):
-        label = labels[i][0]
+        label = labels[i]
         image = images[i]
 
         df = hog_feature_extraction(image)
@@ -169,10 +158,15 @@ def test(model,pp,images, labels):
         label_list.append(label)
 
     predict_array = []
+    probs_array = []
+    probs = 0
     for i in range(len(label_list)):
         predict = model.predict(feature_list[i].reshape((1,-1)))
+        probs = model.predict_proba(feature_list[i].reshape((1,-1)))
         predict_array.append(predict)
-
+        #print(probs[0][predict], predict)
+        #probs_array.append(probs[0][predict])
+    #print(probs, predict_array[-1])
     correct = 0
     for i in range(len(predict_array)):
         if (predict_array[i] == label_list[i]):
@@ -180,27 +174,24 @@ def test(model,pp,images, labels):
     print(correct/len(predict_array))
 
 
+if __name__ == "__main__":
+    col_dir = 'chars74k-lite/*/*.jpg'
+    label,image = get_image(col_dir)
 
-col_dir = 'chars74k-lite/*/*.jpg'
-label,image = get_image(col_dir)
+    train_images,test_images,train_labels,test_labels = split_train_test(label,image)
 
-train_images,test_images,train_labels,test_labels = split_train_test(label,image)
-
-train_images = data_processing(train_images)
-test_images = data_processing(test_images)
-
-
-model,pp = training(train_images, train_labels,"HOG","SVM")
-test(model,pp,test_images,test_labels)
-
-#pipe,pp = pca_train(train_images,train_labels)
-#pca_test(test_images,test_labels,pipe,pp)
+    train_images = data_processing(train_images)
+    test_images = data_processing(test_images)
 
 
-#plt.figure()
-#plt.imshow(train_images[4000])
-#plt.figure()
-#plt.imshow(train_images[10])
-#print(label_to_letter(train_labels[4000]))
-#print(label_to_letter(train_labels[10]))
-#plt.show()
+    model,pp = training(train_images, train_labels,"HOG","SVM")
+    test(model,pp,test_images,test_labels)
+
+    #pipe,pp = pca_train(train_images,train_labels)
+    #pca_test(test_images,test_labels,pipe,pp)
+
+
+    plt.figure()
+    plt.imshow(test_images[-1])
+    print(label_to_letter(test_labels[-1]))
+    plt.show()
