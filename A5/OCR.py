@@ -5,10 +5,15 @@ import skimage
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from skimage.feature import hog
+from skimage.feature import local_binary_pattern
 from skimage import data, color, exposure
 from sklearn import preprocessing
 from sklearn.svm import LinearSVC
-from skimage import filters
+from sklearn.pipeline import Pipeline
+from sklearn.decomposition import PCA
+from sklearn.linear_model import LogisticRegression
+
+
 import sklearn.svm as ssv
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -49,7 +54,7 @@ def data_processing(images):
     ret = []
     for image in images:
         grey = color.rgb2gray(image)
-        otsuThreshold = filters.threshold_otsu(grey)
+        otsuThreshold = skimage.filters.threshold_otsu(grey)
         img_bw = grey > otsuThreshold
         intArr = np.array(img_bw).astype(int)
         sciImg = np.multiply(intArr,255)
@@ -61,30 +66,92 @@ def data_processing(images):
 def hog_feature_extraction(image):
     return hog(image,orientations=10, pixels_per_cell=(4,4), cells_per_block=(2, 2) )
 
-def training(images, labels):
+def local_binary_pattern_feature_extraction(image):
+    lbp = local_binary_pattern(image, 150, 4, 'uniform')
+    n_bins = int(lbp.max() + 1)
+    df, _ = np.histogram(lbp, normed=True, bins=n_bins, range=(0, n_bins))
+    return df
+
+def training(images, labels,feature_method, classification_method):
     feature_list = []
     label_list = []
 
     for i in range(len(images)):
         image = images[i]
         label = labels[i][0]
-
-        df = hog_feature_extraction(image)
+        if(feature_method == "HOG"):
+            df = hog_feature_extraction(image)
+        elif(feature_method == "LBP"):
+            df = local_binary_pattern_feature_extraction(image)
 
         feature_list.append(df)
         label_list.append(label)
-    hog_features = np.array(feature_list,'float64')
 
-    # normalize
-    pp = preprocessing.StandardScaler().fit(hog_features)
-    hog_features = pp.transform(hog_features)
+    features = np.array(feature_list,dtype='float')
 
+    pp = preprocessing.StandardScaler().fit(features)
+    features = pp.transform(features)
 
-    #model = KNeighborsClassifier(n_neighbors=3)
-    model = ssv.SVC(kernel='rbf')
-    model.fit(hog_features,label_list)
+    if(classification_method == "KNN"):
+        model = KNeighborsClassifier(n_neighbors=8)
+    elif(classification_method == "SVM"):
+        model = ssv.SVC(kernel='rbf')
 
+    model.fit(features,label_list)
     return model,pp
+
+def pca_train(images,labels):
+    feature_list = []
+    label_list = []
+
+    for i in range(len(images)):
+        label = labels[i][0]
+        image = images[i]
+        df = hog_feature_extraction(image)
+        #df = local_binary_pattern_feature_extraction(image)
+        feature_list.append(df)
+        label_list.append(label)
+
+    hog_features = np.array(feature_list,dtype = 'float64')
+
+    pp = preprocessing.StandardScaler().fit(hog_features)
+    features = pp.transform(hog_features)
+
+    pca = PCA(n_components=600)
+    model = LogisticRegression()
+    #model = ssv.SVC(kernel='rbf')
+
+    pipe = Pipeline([('pca', pca), ('logistic', model)])
+    pipe.fit(features, label_list)
+
+    return pipe,pp
+
+def pca_test(images,labels,pipe,pp):
+    feature_list = []
+    label_list = []
+
+    for i in range(len(images)):
+        label = labels[i][0]
+        image = images[i]
+
+        df = hog_feature_extraction(image)
+        #df = local_binary_pattern_feature_extraction(image)
+        df = pp.transform(np.array([df],'float64'))
+
+        feature_list.append(df)
+        label_list.append(label);
+
+    predict_array = []
+    for i in range(len(feature_list)):
+        feature = feature_list[i]
+        prediction = pipe.predict(feature)
+        predict_array.append(prediction)
+
+    correct = 0
+    for i in range(len(predict_array)):
+        if (predict_array[i] == label_list[i]):
+            correct +=1
+    print(correct/len(predict_array))
 
 def test(model,pp,images, labels):
     feature_list = []
@@ -95,6 +162,7 @@ def test(model,pp,images, labels):
         label = labels[i][0]
 
         df = hog_feature_extraction(image)
+        #df = local_binary_pattern_feature_extraction(image)
         df = pp.transform(np.array([df],'float64'))
 
         feature_list.append(df)
@@ -122,8 +190,11 @@ train_images = data_processing(train_images)
 test_images = data_processing(test_images)
 
 
-model,pp = training(train_images, train_labels)
+model,pp = training(train_images, train_labels,"HOG","SVM")
 test(model,pp,test_images,test_labels)
+
+#pipe,pp = pca_train(train_images,train_labels)
+#pca_test(test_images,test_labels,pipe,pp)
 
 
 #plt.figure()
