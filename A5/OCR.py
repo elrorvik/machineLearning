@@ -2,6 +2,7 @@ from skimage.io import imread_collection, imshow, concatenate_images
 from skimage import io
 import numpy as np
 import skimage
+from sklearn.decomposition import PCA
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from skimage.feature import hog
@@ -9,9 +10,12 @@ from skimage.feature import local_binary_pattern
 from skimage import data, color, exposure
 from sklearn import preprocessing
 from sklearn.svm import LinearSVC
-
+from sklearn import decomposition
+from sklearn.preprocessing import StandardScaler
 import sklearn.svm as ssv
 from sklearn.neighbors import KNeighborsClassifier
+from sklearn.linear_model import LogisticRegression
+from sklearn.linear_model import LogisticRegression
 
 
 
@@ -48,15 +52,16 @@ def split_train_test(y,X):
 
 def data_processing(images):
     ret = []
-    for image in images:
+    """for image in images:
         grey = color.rgb2gray(image)
         otsuThreshold = skimage.filters.threshold_otsu(grey)
         img_bw = grey > otsuThreshold
         intArr = np.array(img_bw).astype(int)
         sciImg = np.multiply(intArr,255)
         #lineImgArray = sciImg.reshape((1,400)) #why ?????
-        ret.append(sciImg)
-    return ret
+        ret.append(sciImg)"""
+    images = color.rgb2gray(images)
+    return images
 
 
 def hog_feature_extraction(image):
@@ -68,34 +73,25 @@ def local_binary_pattern_feature_extraction(image):
     df, _ = np.histogram(lbp, normed=True, bins=n_bins, range=(0, n_bins))
     return df
 
+def pca_feature_extraction(image):
+    pca = decomposition.PCA(.95)
+    image = pca.fit(image)
+    #image = pca.transform(image)
+
+    return image
+
 def training(images, labels):
-    feature_list = []
-    label_list = []
-
-    for i in range(len(images)):
-        image = images[i]
-        label = labels[i][0]
-
-        #df = hog_feature_extraction(image)
-        df = local_binary_pattern_feature_extraction(image)
-
-        feature_list.append(df)
-        label_list.append(label)
-    #hog_features = feature_list
-    hog_features = np.array(feature_list,'float64')
-    print(hog_features.shape)
-    #print(label_list.shape)
-    # normalize
-    pp = preprocessing.StandardScaler().fit(hog_features)
-    hog_features = pp.transform(hog_features, 'float64')
+    prosImage = data_processing(images)
+    scaler = StandardScaler()
+    scaler.fit(prosImage)
+    prosImage = scaler.transform(prosImage)
+    pca = PCA(.95)
+    print(prosImage.shape)
+    pca.fit(prosImage)
+    pca.transform(prosImage)
 
 
-    #model = KNeighborsClassifier(n_neighbors=8)
-    model = ssv.SVC(kernel='rbf',gamma=1/150)
-    print(len(hog_features), len(label_list))
-    model.fit(hog_features,label_list)
-
-    return model,pp
+    print("juhu")
 
 def test(model,pp,images, labels):
     feature_list = []
@@ -133,8 +129,8 @@ train_images = data_processing(train_images)
 test_images = data_processing(test_images)
 
 
-model,pp = training(train_images, train_labels)
-test(model,pp,test_images,test_labels)
+training(train_images, train_labels)
+#test(model,pp,test_images,test_labels)
 
 
 #plt.figure()
