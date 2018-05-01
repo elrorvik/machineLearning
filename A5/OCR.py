@@ -63,7 +63,7 @@ def hog_feature_extraction(image):
     return hog(image,orientations=10, pixels_per_cell=(4,4), cells_per_block=(2, 2) )
 
 def local_binary_pattern_feature_extraction(image):
-    lbp = local_binary_pattern(image, 32, 4, 'uniform')
+    lbp = local_binary_pattern(image, 150, 4, 'uniform')
     n_bins = int(lbp.max() + 1)
     df, _ = np.histogram(lbp, normed=True, bins=n_bins, range=(0, n_bins))
     return df
@@ -82,16 +82,16 @@ def training(images, labels):
         feature_list.append(df)
         label_list.append(label)
     #hog_features = feature_list
-    hog_features = np.array(feature_list)
+    hog_features = np.array(feature_list,'float64')
     print(hog_features.shape)
     #print(label_list.shape)
     # normalize
     pp = preprocessing.StandardScaler().fit(hog_features)
-    hog_features = pp.transform(hog_features)
+    hog_features = pp.transform(hog_features, 'float64')
 
 
     #model = KNeighborsClassifier(n_neighbors=8)
-    model = ssv.SVC(kernel='rbf')
+    model = ssv.SVC(kernel='rbf',gamma=1/150)
     print(len(hog_features), len(label_list))
     model.fit(hog_features,label_list)
 
@@ -104,7 +104,7 @@ def test(model,pp,images, labels):
     for i in range(len(images)):
         image = images[i]
         label = labels[i][0]
-
+        #df = hog_feature_extraction(image)
         df = local_binary_pattern_feature_extraction(image)
         df = pp.transform(np.array([df],'float64'))
 
