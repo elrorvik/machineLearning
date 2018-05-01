@@ -5,10 +5,11 @@ import skimage
 import matplotlib.pyplot as plt
 from sklearn.model_selection import train_test_split
 from skimage.feature import hog
+from skimage.feature import local_binary_pattern
 from skimage import data, color, exposure
 from sklearn import preprocessing
 from sklearn.svm import LinearSVC
-from skimage import filter
+
 import sklearn.svm as ssv
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -49,7 +50,7 @@ def data_processing(images):
     ret = []
     for image in images:
         grey = color.rgb2gray(image)
-        otsuThreshold = filter.threshold_otsu(grey)
+        otsuThreshold = skimage.filters.threshold_otsu(grey)
         img_bw = grey > otsuThreshold
         intArr = np.array(img_bw).astype(int)
         sciImg = np.multiply(intArr,255)
@@ -61,6 +62,12 @@ def data_processing(images):
 def hog_feature_extraction(image):
     return hog(image,orientations=10, pixels_per_cell=(4,4), cells_per_block=(2, 2) )
 
+def local_binary_pattern_feature_extraction(image):
+    lbp = local_binary_pattern(image, 32, 4, 'uniform')
+    n_bins = int(lbp.max() + 1)
+    df, _ = np.histogram(lbp, normed=True, bins=n_bins, range=(0, n_bins))
+    return df
+
 def training(images, labels):
     feature_list = []
     label_list = []
@@ -69,19 +76,23 @@ def training(images, labels):
         image = images[i]
         label = labels[i][0]
 
-        df = hog_feature_extraction(image)
+        #df = hog_feature_extraction(image)
+        df = local_binary_pattern_feature_extraction(image)
 
         feature_list.append(df)
         label_list.append(label)
-    hog_features = np.array(feature_list,'float64')
-
+    #hog_features = feature_list
+    hog_features = np.array(feature_list)
+    print(hog_features.shape)
+    #print(label_list.shape)
     # normalize
     pp = preprocessing.StandardScaler().fit(hog_features)
     hog_features = pp.transform(hog_features)
 
 
-    #model = KNeighborsClassifier(n_neighbors=3)
+    #model = KNeighborsClassifier(n_neighbors=8)
     model = ssv.SVC(kernel='rbf')
+    print(len(hog_features), len(label_list))
     model.fit(hog_features,label_list)
 
     return model,pp
@@ -94,7 +105,7 @@ def test(model,pp,images, labels):
         image = images[i]
         label = labels[i][0]
 
-        df = hog_feature_extraction(image)
+        df = local_binary_pattern_feature_extraction(image)
         df = pp.transform(np.array([df],'float64'))
 
         feature_list.append(df)
