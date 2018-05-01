@@ -8,7 +8,7 @@ from skimage.feature import hog
 from skimage import data, color, exposure
 from sklearn import preprocessing
 from sklearn.svm import LinearSVC
-from skimage import filter
+from skimage import filters
 import sklearn.svm as ssv
 from sklearn.neighbors import KNeighborsClassifier
 
@@ -49,7 +49,7 @@ def data_processing(images):
     ret = []
     for image in images:
         grey = color.rgb2gray(image)
-        otsuThreshold = filter.threshold_otsu(grey)
+        otsuThreshold = filters.threshold_otsu(grey)
         img_bw = grey > otsuThreshold
         intArr = np.array(img_bw).astype(int)
         sciImg = np.multiply(intArr,255)
