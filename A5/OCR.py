@@ -51,16 +51,16 @@ def split_train_test(y,X):
     return X_train,X_test,y_train,y_test
 
 def data_processing(images):
-    ret = []
-    for image in images:
-        grey = color.rgb2gray(image)
+
+    for i in range(images.shape[0]):
+        grey = color.rgb2gray(images[i])
         otsuThreshold = skimage.filters.threshold_otsu(grey)
         img_bw = grey > otsuThreshold
         intArr = np.array(img_bw).astype(int)
         sciImg = np.multiply(intArr,255)
         #lineImgArray = sciImg.reshape((1,400)) #why ?????
-        ret.append(sciImg)
-    return ret
+        images[i] = sciImg
+    return images
 
 
 def hog_feature_extraction(image):
