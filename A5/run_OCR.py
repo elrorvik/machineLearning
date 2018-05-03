@@ -2,9 +2,10 @@ from OCR import *
 from extract_characters import *
 from pathlib import Path
 import pickle
+from PIL import Image, ImageDraw
+import cv2
 
 def classify(model,pp,images):
-
     feature_list = []
     for i in range(len(images)):
         image = images[i]
@@ -23,56 +24,96 @@ def classify(model,pp,images):
 
     return results
 
+def process_classifications(im,clas_segments,cord,results,prob_threshold,name,save):
+    output_dir = "output/classifications/"
+    if save and not os.path.exists(output_dir):
+        os.makedirs(output_dir)
 
-    
+
+    im = np.asarray(Image.fromarray(im).convert("RGB"))
+    classified_images = []
+
+    for t in range(len(results)):
+        image_prob = results[t][2]
+        if(image_prob>=prob_threshold): 
+            image_class = label_to_letter(int(results[t][1]))
+            classified_images.append(t)
+            #print("Image nr {}: labeled: {}, prob: {:0.5f}".format(t,image_class,image_prob))
+
+            #add bounding box to image
+            pt1,pt2 = (cord[t][0],cord[t][1]),(cord[t][0]+22,cord[t][1]+22)
+            im = cv2.rectangle(im,pt1,pt2,(0,255,0),2)
+
+            if(save):
+                image_name = "{}_{}_{}_{:0.2f}".format(name,t,image_class,image_prob)
+                seg_image = Image.fromarray(clas_segments[t]).convert('RGB')
+                seg_image.save(output_dir+image_name+".jpeg")
+ 
+    im = Image.fromarray(im)
+    im.save(output_dir+"BoundingBoxes.jpg")
 
 
 def main():
-    load = True
     #----------Training-------------
+    load = False #Load earlier models
+
     col_dir = 'chars74k-lite/*/*.jpg'
     print("===Training: ",col_dir)
-    label,image = get_image(col_dir)
-    
-    print("Processing training data")
-    train_images,test_images,train_labels,test_labels = split_train_test(label,image)
-    train_images = data_processing(train_images)
-    test_images = data_processing(test_images)
 
+    #Create data sets from training iterations
+    label,image = get_image(col_dir)
+    train_images,test_images,train_labels,test_labels = split_train_test(label,image)
+    
+    #Create model
     if(load and Path("saved_model.o").is_file() and Path("saved_pp.o").is_file()):
         print("Loading models")
         model = pickle.load(open("saved_model.o","rb"))
         pp = pickle.load(open("saved_pp.o","rb"))
     else:
+        print("Processing training data")
+        train_images = data_processing(train_images)
+        print("Creating models")
         model,pp = training(train_images, train_labels,"HOG","SVM")
+        print("Saving models")
         pickle.dump(model, open("saved_model.o","wb"))
         pickle.dump(pp, open("saved_pp.o","wb"))
-    
-    print("Testing models")
-    test(model,pp,test_images,test_labels)
+   
+    #-----------Testing--------------
+    #Test the models on the training data
+    test_model = False
 
-    #---------Classify Images-----------
+    if(test_model):
+        print("Testing models")
+        test_images = data_processing(test_images)
+        test(model,pp,test_images,test_labels)
+
+    #---------Classify External Images-----------
+    #Classify an external image
+    classify_seg = True
+    if(not classify_seg): return
+
     clas_dir = 'detection-images/*.jpg'
     print("===Classify: ",clas_dir )
-    clas_images = get_image_classify(clas_dir)
-    class_segments = np.asarray(extract_window(clas_images[1],name="image2",save=True))
-    class_preprocessed = data_processing(class_segments)
-    results = classify(model,pp,class_preprocessed)
-    t = 175
-    print(results[t][1],results[t][2])
-    plt.figure()
-    plt.imshow(results[t][0])
 
-    plt.show()
+    image_number = 1    #Image number to classify in traget folder
+    save_seg = False    #Save segment items
+
+    save_name = "Im{}".format(image_number)
+    clas_images = get_image_classify(clas_dir)
+    clas_segments,cord = extract_windows(clas_images[image_number],save_name,save_seg)
+    clas_preprocessed = data_processing(clas_segments)
+    results = classify(model,pp,clas_preprocessed)
+
+    #---------Retrieve External Classififactions-----------
+    prob_threshold = 0.8
+    print("===Retrieving Classifications, threshold: {}", prob_threshold)
+    save_clas = True #Save classification items
+
+    im = clas_images[image_number]
+    process_classifications(im,clas_segments,cord,results,prob_threshold,save_name,save_clas)
     
 
-    #plt.figure()
-    #plt.imshow(train_images[4000])
-    #plt.figure()
-    #plt.imshow(train_images[10])
-    #print(label_to_letter(train_labels[4000]))
-    #print(label_to_letter(train_labels[10]))
-    #plt.show()
+
 
 
 if __name__ == "__main__":
