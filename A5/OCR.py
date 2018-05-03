@@ -152,58 +152,6 @@ def test(model,pp,pca,images, labels,feature_method, classification_method):
     print("accuracy" , correct/len(predict_array))
     return predict_array, probs_array
 
-def pca_train(images,labels):
-    feature_list = []
-    label_list = []
-
-    for i in range(len(images)):
-        label = labels[i][0]
-        image = images[i]
-        df = hog_feature_extraction(image)
-        #df = local_binary_pattern_feature_extraction(image)
-        feature_list.append(df)
-        label_list.append(label)
-
-    hog_features = np.array(feature_list,dtype = 'float64')
-
-    pp = preprocessing.StandardScaler().fit(hog_features)
-    features = pp.transform(hog_features)
-
-    pca = PCA(n_components=600)
-    model = LogisticRegression()
-    #model = ssv.SVC(kernel='rbf')
-
-    pipe = Pipeline([('pca', pca), ('logistic', model)])
-    pipe.fit(features, label_list)
-
-    return pipe,pp
-
-def pca_test(images,labels,pipe,pp):
-    feature_list = []
-    label_list = []
-
-    for i in range(len(images)):
-        label = labels[i]
-        image = images[i]
-
-        df = hog_feature_extraction(image)
-        #df = local_binary_pattern_feature_extraction(image)
-        df = pp.transform(np.array([df],'float64'))
-
-        feature_list.append(df)
-        label_list.append(label);
-
-    predict_array = []
-    for i in range(len(feature_list)):
-        feature = feature_list[i]
-        prediction = pipe.predict(feature)
-        predict_array.append(prediction)
-
-    correct = 0
-    for i in range(len(predict_array)):
-        if (predict_array[i] == label_list[i]):
-            correct +=1
-    print(correct/len(predict_array))
 
 
 if __name__ == "__main__":
