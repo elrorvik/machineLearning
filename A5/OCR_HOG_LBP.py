@@ -22,45 +22,10 @@ from sklearn.svm import SVC
 from sklearn.metrics import confusion_matrix
 from scipy import ndimage
 
+from OCR import label_to_letter, letter_to_label, get_image, split_train_test, data_processing, hog_feature_extraction
 
 #https://towardsdatascience.com/scanned-digits-recognition-using-k-nearest-neighbor-k-nn-d1a1528f0dea
 
-def label_to_letter(label):
-    return chr(label+97)
-
-def letter_to_label(letter):
-    return int(ord(letter)-97)
-
-def get_image(folder_path):
-    col = imread_collection(folder_path) #creating a collection with the available images
-    train = concatenate_images(col)
-    label = np.zeros((train.shape[0],1))
-    for (file_name,i) in zip(col.files,range(train.shape[0])):
-        label[i] = letter_to_label(file_name[14])
-    return label,train
-
-def split_train_test(y,X):
-    X_train, X_test, y_train, y_test = train_test_split(X, y, test_size=0.20, random_state=400)
-    return X_train,X_test,y_train,y_test
-
-def data_processing(images):
-
-    for i in range(images.shape[0]):
-        grey = color.rgb2gray(images[i])
-
-        otsuThreshold = skimage.filters.threshold_otsu(grey)
-        img_bw = grey > otsuThreshold
-
-        intArr = np.array(img_bw).astype(int)
-
-        sciImg = np.multiply(intArr,255)
-
-        images[i] = sciImg
-    return images
-
-
-def hog_feature_extraction(image):
-    return hog(image,orientations=10, pixels_per_cell=(4,4), cells_per_block=(2, 2) )
 
 def local_binary_pattern_feature_extraction(image):
     lbp = local_binary_pattern(image, 24, 4, 'uniform')
