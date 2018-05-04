@@ -1,5 +1,6 @@
 from skimage.io import imread_collection, imshow, concatenate_images
 from skimage import io
+import sklearn
 import numpy as np
 import skimage
 import matplotlib.pyplot as plt
@@ -44,18 +45,12 @@ def split_train_test(y,X):
     return X_train,X_test,y_train,y_test
 
 def data_processing(images):
-
     for i in range(images.shape[0]):
         grey = color.rgb2gray(images[i])
-
         otsuThreshold = skimage.filters.threshold_otsu(grey)
         img_bw = grey > otsuThreshold
-
         intArr = np.array(img_bw).astype(int)
-
         sciImg = np.multiply(intArr,255)
-
-        #lineImgArray = sciImg.reshape((1,400)) #why ?????
         images[i] = sciImg
     return images
 
@@ -72,9 +67,7 @@ def local_binary_pattern_feature_extraction(image):
 def training(images, labels,feature_method, classification_method):
     feature_list = []
     label_list = []
-
     for i in range(len(images)):
-
         image = images[i]
         label = labels[i][0]
         df = 0
@@ -82,28 +75,22 @@ def training(images, labels,feature_method, classification_method):
             df = hog_feature_extraction(image)
         elif(feature_method == "LBP"):
             df = local_binary_pattern_feature_extraction(image)
-
         feature_list.append(df)
         label_list.append(label)
-
-
     features = np.array(feature_list,dtype='float')
     pp = preprocessing.StandardScaler().fit(features)
     features = pp.transform(features)
-
     pca = None
     if(feature_method == "HOG+PCA" ):
         pca = PCA(n_components=600)
         pca.fit(features)
         features = pca.transform(features)
-
     if(classification_method == "KNN"):
         model = KNeighborsClassifier(n_neighbors=8)
     elif(classification_method == "SVM"):
         model = ssv.SVC(kernel='rbf',probability=True)
     elif(classification_method == "logistic"):
         model = LogisticRegression()
-
     model.fit(features,label_list)
     return model,pp,pca
 
@@ -112,38 +99,31 @@ def training(images, labels,feature_method, classification_method):
 def test(model,pp,pca,images, labels,feature_method, classification_method):
     feature_list = []
     label_list = []
-
+    pros_images = images
+    pros_images = data_processing(pros_images)
     for i in range(len(images)):
-        image = images[i]
+        image = pros_images[i]
         label = labels[i][0]
-
         if(feature_method == "HOG" or "HOG+PCA"):
             df = hog_feature_extraction(image)
         elif(feature_method == "LBP"):
             df = local_binary_pattern_feature_extraction(image)
-
         df = pp.transform(np.array([df],'float64'))
         if("HOG+PCA"== feature_method):
             df = pca.transform(df.reshape((1,-1)))
-
-
-
         feature_list.append(df)
         label_list.append(label)
-
-
-
     predict_array = []
     probs_array = []
     probs = 0
-    for i in range(len(label_list)):
+    for i in range(len(feature_list)):
         predict = model.predict(feature_list[i].reshape((1,-1)))
         probs = model.predict_proba(feature_list[i].reshape((1,-1)))
-
         predict_array.append(predict[0])
         probs_array.append(probs[0][int(predict)])
-
-    #print(probs, predict_array[-1])
+        print(label_to_letter(int(predict))+ ": " + str(probs[0][int(predict)]))
+        print("correct: " + label_to_letter(int(label_list[i])))
+        print(probs[0])
     correct = 0
     for i in range(len(predict_array)):
         if (predict_array[i] == label_list[i]):
@@ -153,89 +133,29 @@ def test(model,pp,pca,images, labels,feature_method, classification_method):
     return predict_array, probs_array
 
 
+def prection_of_each_letter_in_test(true_label,pre_label, classifier):
+    print(sklearn.metrics.confusion_matrix(true_label, pre_label))
+    print("With the "+ classifier + " classifier")
+    for i in range(len(sklearn.metrics.confusion_matrix(true_label, pre_label))):
+        information =""
+        information += label_to_letter(i)+": "
+        information += str("{0:.2f}".format(sklearn.metrics.confusion_matrix(true_label, pre_label)[i][i]/\
+        sum(sklearn.metrics.confusion_matrix(true_label, pre_label)[i])))
+        information += "  " + str(sklearn.metrics.confusion_matrix(true_label, pre_label)[i][i])
+        information += " of " + str(sum(sklearn.metrics.confusion_matrix(true_label, pre_label)[i]))
+        print(information)
+
 
 if __name__ == "__main__":
     col_dir = 'chars74k-lite/*/*.jpg'
     label,image = get_image(col_dir)
-
     train_images,test_images,train_labels,test_labels = split_train_test(label,image)
     train_images = data_processing(train_images)
-    test_images = data_processing(test_images)
-
-    feature_method = "HOG+PCA"
+    #test1_images = test_images[::120]
+    #test1_labels = test_labels[::120]
+    feature_method = "HOG"
     classification_method = "SVM"
     model,pp,pca = training(train_images,train_labels,feature_method,classification_method)
-    test(model,pp,pca,test_images, test_labels,feature_method, classification_method)
-
-    '''train_images = data_processing(train_images)
-    test_images = data_processing(test_images)
-    X = color.rgb2gray(train_images)
-    y = train_labels'''
-
-    '''label_list = []
-    y_validation = []
-    for i in range(train_images.shape[0]):
-        train_images[i] = color.rgb2grey(train_images[i])
-        train_images[i] = ndimage.median_filter(train_images[i], 3)
-        train_images[i] = preprocessing.scale(train_images[i])
-        label = train_labels[i][0]
-        label_list.append(label);
-
-    print(train_images.shape)
-
-    for i in range(test_images.shape[0]):
-        test_images[i] = color.rgb2grey(test_images[i])
-        test_images[i] = ndimage.median_filter(test_images[i], 3)
-        test_images[i] = preprocessing.scale(test_images[i])
-
-        label = test_labels[i][0]
-        y_validation.append(label);
-
-    #X_std = StandardScaler().fit_transform(train_images)
-    #X_std_validation = StandardScaler().fit_transform(test_images)
-    X_std = train_images
-    X_std_validation = test_images
-
-    classifier = svm.SVC(gamma=0.005)
-    classifier.fit(X_std, label_list)
-
-    predicted = classifier.predict(X_std_validation)
-
-    cm = confusion_matrix(y_validation,predicted)
-    total = cm.sum(axis=None)
-    correct = cm.diagonal().sum()
-
-    print( "5-Component PCA Accuracy: %0.2f %%"%(100.0*correct/total))'''
-
-
-    '''pca2 = PCA(n_components=20)
-    pca2.fit(X_std)
-    X_red = pca2.transform(X_std)
-    label_list = []
-    for i in range(len(train_labels)):
-        label = train_labels[i][0]
-        label_list.append(label);
-    y_validation = []
-    for i in range(len(test_labels)):
-        label = test_labels[i][0]
-        y_validation.append(label);
-
-    linclass2 = KNeighborsClassifier(n_neighbors=50)
-    linclass2.fit(X_red,label_list)
-
-    X_red_validation = pca2.transform(X_std_validation)
-    yhat_validation = linclass2.predict(X_red_validation)
-
-    pca2_cm = confusion_matrix(y_validation,yhat_validation)
-    total = pca2_cm.sum(axis=None)
-    correct = pca2_cm.diagonal().sum()
-
-    print( "5-Component PCA Accuracy: %0.2f %%"%(100.0*correct/total))
-'''
-    '''exit()
-    model,pp,pca = training(train_images, train_labels,"PCA","SVM")
-    print(pca)
-
-    test(model,pp,test_images, test_labels,pca)
-
-    exit()'''
+    predict_array, probs_array = test(model,pp,pca,test_images, test_labels,feature_method, classification_method)
+    #prection_of_each_letter_in_test(test_labels, predict_array, classification_method)
+    #test(model,pp,pca,test1_images, test1_labels,feature_method, classification_method)
