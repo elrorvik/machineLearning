@@ -1,2 +1,3 @@
 A5/output/
 A5/*.o
+__pycache__/

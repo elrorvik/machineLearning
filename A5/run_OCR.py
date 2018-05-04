@@ -47,15 +47,17 @@ def process_classifications(im,clas_segments,cord,results,prob_threshold,name,sa
             if(save):
                 image_name = "{}_{}_{}_{:0.2f}".format(name,t,image_class,image_prob)
                 seg_image = Image.fromarray(clas_segments[t]).convert('RGB')
-                seg_image.save(output_dir+image_name+".jpeg")
+                seg_image.save(output_dir+image_name+".jpg")
  
     im = Image.fromarray(im)
-    im.save(output_dir+"BoundingBoxes.jpg")
+    im.save(output_dir+name+"_BB.jpg")
 
 
 def main():
     #----------Training-------------
     load = False #Load earlier models
+    feature_method = "HOG"
+    classification_method = "SVM"
 
     col_dir = 'chars74k-lite/*/*.jpg'
     print("===Training: ",col_dir)
@@ -65,27 +67,32 @@ def main():
     train_images,test_images,train_labels,test_labels = split_train_test(label,image)
     
     #Create model
-    if(load and Path("saved_model.o").is_file() and Path("saved_pp.o").is_file()):
+    if(load and Path("saved_model.o").is_file() 
+            and Path("saved_pp.o").is_file() 
+            and Path("saved_pca.o").is_file()):
         print("Loading models")
         model = pickle.load(open("saved_model.o","rb"))
         pp = pickle.load(open("saved_pp.o","rb"))
+        pca = pickle.load(open("saved_pca.o","rb"))
     else:
         print("Processing training data")
         train_images = data_processing(train_images)
         print("Creating models")
-        model,pp = training(train_images, train_labels,"HOG","SVM")
+        model,pp,pca = training(train_images, train_labels,feature_method,classification_method)
         print("Saving models")
         pickle.dump(model, open("saved_model.o","wb"))
         pickle.dump(pp, open("saved_pp.o","wb"))
+        pickle.dump(pca, open("saved_pca.o","wb"))
+
    
     #-----------Testing--------------
     #Test the models on the training data
-    test_model = False
+    test_model = True
 
     if(test_model):
         print("Testing models")
         test_images = data_processing(test_images)
-        test(model,pp,test_images,test_labels)
+        test(model,pp,pca,test_images,test_labels,feature_method,classification_method)
 
     #---------Classify External Images-----------
     #Classify an external image
