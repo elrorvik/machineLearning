@@ -55,7 +55,7 @@ def process_classifications(im,clas_segments,cord,results,prob_threshold,name,sa
 
 def main():
     #----------Training-------------
-    load = False #Load earlier models
+    load = True #Load earlier models
     feature_method = "HOG"
     classification_method = "SVM"
 
@@ -92,12 +92,15 @@ def main():
     if(test_model):
         print("Testing models")
         test_images = data_processing(test_images)
-        test(model,pp,pca,test_images,test_labels,feature_method,classification_method)
+        predict_array, probs_array = test(model,pp,pca,test_images,test_labels,
+                feature_method,classification_method)
 
     #---------Classify External Images-----------
     #Classify an external image
-    classify_seg = True
-    if(not classify_seg): return
+    classify_seg = False
+    if(not classify_seg): 
+        print("====Classify: Turned off")
+        return
 
     clas_dir = 'detection-images/*.jpg'
     print("===Classify: ",clas_dir )
