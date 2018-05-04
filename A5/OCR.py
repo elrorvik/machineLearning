@@ -121,9 +121,9 @@ def test(model,pp,pca,images, labels,feature_method, classification_method):
         probs = model.predict_proba(feature_list[i].reshape((1,-1)))
         predict_array.append(predict[0])
         probs_array.append(probs[0][int(predict)])
-        print(label_to_letter(int(predict))+ ": " + str(probs[0][int(predict)]))
-        print("correct: " + label_to_letter(int(label_list[i])))
-        print(probs[0])
+        #print(label_to_letter(int(predict))+ ": " + str(probs[0][int(predict)]))
+        #print("correct: " + label_to_letter(int(label_list[i])))
+        #print(probs[0])
     correct = 0
     for i in range(len(predict_array)):
         if (predict_array[i] == label_list[i]):
